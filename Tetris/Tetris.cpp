@@ -84,10 +84,24 @@ void ProcessMouseMotionEvent(const SDL_MouseMotionEvent & e);
 void ProcessMouseDownEvent(const SDL_MouseButtonEvent & e);
 void ProcessMouseUpEvent(const SDL_MouseButtonEvent & e);
 void DrawGrid();
-// Variables
+void BlockUpdate();
+void DrawBlock(float x, float y);
+void DrawSquare(float x, float y);
 
+// Variables
 Texture g_Grid{};
-const float g_Left{ 400.0f };
+float g_Left{ 400.f };
+const float g_BlockSize(40.f);
+bool g_FilledArray[180];
+bool g_IsMovingArray[180];
+int g_Counter{ 0 };
+bool g_Moving{false};
+float g_X{ 4 }, g_Y{ 16 };
+int g_Figure{ 0 };
+enum class BlockTypes
+{
+	Square, Line
+};
 #pragma endregion gameDeclarations
 
 
@@ -111,7 +125,7 @@ int main( int argc, char* args[] )
 #pragma region gameImplementations
 void InitGameResources()
 {
-	TextureFromFile("Resources/Layout.jpg", g_Grid);
+	TextureFromFile("Resources/Layout.png", g_Grid);
 }
 
 void FreeGameResources()
@@ -184,10 +198,13 @@ void Update( float elapsedSec )
 	//{
 	//	std::cout << "Left and up arrow keys are down\n";
 	//}
+
+	BlockUpdate();
 }
 
 void DrawGrid()
 {
+	g_Left = (g_WindowWidth / 2) - (g_Grid.width / 2);
 	Rectf destRect;
 	destRect.left = g_Left;
 	destRect.width = g_Grid.width;
@@ -195,12 +212,64 @@ void DrawGrid()
 	destRect.bottom = 0.0f;
 
 	DrawTexture(g_Grid, destRect);
+
+
+}
+
+void BlockUpdate()
+{
+	g_Counter++;
+	//std::cout << g_Counter << std::endl;
+	if (g_Counter == 100)
+	{
+		if (g_Moving)
+		{
+			
+		}
+		else
+		{
+			BlockTypes bTypes{ BlockTypes(g_Figure) };
+			switch (bTypes)
+			{
+			case BlockTypes::Square:
+				g_X = 4;
+				g_Y = 16;
+				break;
+			}
+			g_Moving = true;
+		}
+	}
+}
+
+void DrawBlock(float x, float y)
+{
+	glColor3f(0.f, 0.f, 1.f);
+	glBegin(GL_QUADS);
+	glVertex2f(x * g_BlockSize + g_Left + g_BlockSize, y * g_BlockSize); //Bottom left
+	glVertex2f(x * g_BlockSize + g_Left + (2 * g_BlockSize), y * g_BlockSize);//Bottom Right
+	glVertex2f(x * g_BlockSize + g_Left + (2 * g_BlockSize), y * g_BlockSize + g_BlockSize);//Top right
+	glVertex2f(x * g_BlockSize + g_Left + g_BlockSize, y * g_BlockSize + g_BlockSize);//Top left
+	glEnd();
+}
+
+void DrawSquare(float x, float y)
+{
+	DrawBlock(x, y);//Bottom left block
+	DrawBlock(x + 1, y);//Bottom right
+	DrawBlock(x + 1, y - 1);//Top right
+	DrawBlock(x, y - 1);//Top left
 }
 
 void Draw( )
 {
 	ClearBackground( );
 	DrawGrid();
+	BlockTypes bTypes{ BlockTypes(g_Figure) };
+	switch (bTypes)
+	{
+	case BlockTypes::Square:
+		DrawSquare(g_X, g_Y);
+	}
 }
 
 void ClearBackground( )
