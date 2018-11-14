@@ -83,7 +83,11 @@ void ProcessKeyUpEvent(const SDL_KeyboardEvent  & e);
 void ProcessMouseMotionEvent(const SDL_MouseMotionEvent & e);
 void ProcessMouseDownEvent(const SDL_MouseButtonEvent & e);
 void ProcessMouseUpEvent(const SDL_MouseButtonEvent & e);
+void DrawGrid();
 // Variables
+
+Texture g_Grid{};
+const float g_Left{ 400.0f };
 #pragma endregion gameDeclarations
 
 
@@ -107,12 +111,12 @@ int main( int argc, char* args[] )
 #pragma region gameImplementations
 void InitGameResources()
 {
-
+	TextureFromFile("Resources/Layout.jpg", g_Grid);
 }
 
 void FreeGameResources()
 {
-
+	DeleteTexture(g_Grid);
 }
 
 void ProcessKeyDownEvent(const SDL_KeyboardEvent  & e)
@@ -182,9 +186,21 @@ void Update( float elapsedSec )
 	//}
 }
 
+void DrawGrid()
+{
+	Rectf destRect;
+	destRect.left = g_Left;
+	destRect.width = g_Grid.width;
+	destRect.height = g_Grid.height;
+	destRect.bottom = 0.0f;
+
+	DrawTexture(g_Grid, destRect);
+}
+
 void Draw( )
 {
 	ClearBackground( );
+	DrawGrid();
 }
 
 void ClearBackground( )
