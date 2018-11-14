@@ -99,10 +99,19 @@ int g_Counter{ 0 };
 bool g_Moving{false};
 float g_X{ 4 }, g_Y{ 16 };
 int g_Figure{ 7 };
+bool g_StateLine{ false }; //Line false --> down true --> up
 enum class BlockTypes
 {
 	Square, Line
 };
+
+//enum class FilledEnum
+//{
+//	for (int i = 0; i < 180; i++)
+//	{
+//		
+//	}
+//};
 #pragma endregion gameDeclarations
 
 
@@ -136,7 +145,12 @@ void FreeGameResources()
 
 void ProcessKeyDownEvent(const SDL_KeyboardEvent  & e)
 {
-
+	switch (e.keysym.sym)
+	{
+	case SDLK_UP:
+		g_StateLine = !g_StateLine;
+		break;
+	}
 }
 
 void ProcessKeyUpEvent(const SDL_KeyboardEvent  & e)
@@ -230,6 +244,23 @@ void BlockUpdate()
 			}
 			else
 			{
+				BlockTypes bTypes{ BlockTypes(g_Figure) };
+				switch (bTypes)
+				{
+				case BlockTypes::Square:
+
+					break;
+				case BlockTypes::Line:
+					if (g_StateLine)
+					{
+						//g_FilledArray[int(g_Y) * 10 + int(g_X)] =  1; 
+					}
+					else if (!g_StateLine)
+					{
+
+					}
+					break;
+				}
 				g_Moving = false;
 			}
 		}
@@ -247,6 +278,7 @@ void BlockUpdate()
 			case BlockTypes::Line:
 				g_X = 3;
 				g_Y = 16;
+				g_StateLine = false;
 				break;
 			}
 			g_Moving = true;
@@ -276,10 +308,21 @@ void DrawSquare(float x, float y)
 
 void DrawLine(float x, float y)
 {
-	for (float i = 0; i < 4; i++)
+	if (g_StateLine)
 	{
-		DrawBlock(x + i, y);
+		for (float i = 0; i < 4; i++)
+		{
+			DrawBlock(x, y+i);
+		}
 	}
+	else if (!g_StateLine)
+	{
+		for (float i = 0; i < 4; i++)
+		{
+			DrawBlock(x + i, y);
+		}
+	}
+	
 }
 
 void Draw( )
