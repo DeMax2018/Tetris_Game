@@ -30,6 +30,8 @@
 
 #include "structs.h"
 
+//Hey
+
 #pragma region windowInformation
 const float g_WindowWidth{ 1280.0f };
 const float g_WindowHeight{ 720.0f };
