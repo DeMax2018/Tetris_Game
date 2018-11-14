@@ -87,6 +87,7 @@ void DrawGrid();
 void BlockUpdate();
 void DrawBlock(float x, float y);
 void DrawSquare(float x, float y);
+void DrawLine(float x, float y);
 
 // Variables
 Texture g_Grid{};
@@ -97,7 +98,7 @@ bool g_IsMovingArray[180];
 int g_Counter{ 0 };
 bool g_Moving{false};
 float g_X{ 4 }, g_Y{ 16 };
-int g_Figure{ 0 };
+int g_Figure{ 7 };
 enum class BlockTypes
 {
 	Square, Line
@@ -218,27 +219,40 @@ void DrawGrid()
 
 void BlockUpdate()
 {
-	g_Counter++;
 	//std::cout << g_Counter << std::endl;
-	if (g_Counter == 100)
+	if (g_Counter % 10 == 0)
 	{
 		if (g_Moving)
 		{
-			
+			if (g_Y > 1)
+			{
+				g_Y--;
+			}
+			else
+			{
+				g_Moving = false;
+			}
 		}
 		else
 		{
+			g_Figure = rand() % 2;
+			std::cout << g_Figure << std::endl;
 			BlockTypes bTypes{ BlockTypes(g_Figure) };
 			switch (bTypes)
 			{
 			case BlockTypes::Square:
 				g_X = 4;
+				g_Y = 15;
+				break;
+			case BlockTypes::Line:
+				g_X = 3;
 				g_Y = 16;
 				break;
 			}
 			g_Moving = true;
 		}
 	}
+	g_Counter++;
 }
 
 void DrawBlock(float x, float y)
@@ -256,8 +270,16 @@ void DrawSquare(float x, float y)
 {
 	DrawBlock(x, y);//Bottom left block
 	DrawBlock(x + 1, y);//Bottom right
-	DrawBlock(x + 1, y - 1);//Top right
-	DrawBlock(x, y - 1);//Top left
+	DrawBlock(x + 1, y + 1);//Top right
+	DrawBlock(x, y + 1);//Top left
+}
+
+void DrawLine(float x, float y)
+{
+	for (float i = 0; i < 4; i++)
+	{
+		DrawBlock(x + i, y);
+	}
 }
 
 void Draw( )
@@ -269,6 +291,10 @@ void Draw( )
 	{
 	case BlockTypes::Square:
 		DrawSquare(g_X, g_Y);
+		break;
+	case BlockTypes::Line:
+		DrawLine(g_X, g_Y);
+		break;
 	}
 }
 
