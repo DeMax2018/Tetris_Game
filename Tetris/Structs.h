@@ -20,3 +20,11 @@ struct Color4f
 	float b;
 	float a;
 };
+
+
+struct Block
+{
+	int x, y{};
+	bool isFilled;
+	bool isMoving;
+};

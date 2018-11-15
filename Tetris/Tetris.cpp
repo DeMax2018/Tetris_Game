@@ -88,16 +88,18 @@ void BlockUpdate();
 void DrawBlock(float x, float y);
 void DrawSquare(float x, float y);
 void DrawLine(float x, float y);
+void GridFill(int nrCols, Block *pFilled);
 
 // Variables
 Texture g_Grid{};
 float g_Left{ 400.f };
 const float g_BlockSize(40.f);
-bool g_FilledArray[180];
-bool g_IsMovingArray[180];
+const int g_GridSize{ 160 };
+Block g_GridArray[g_GridSize];
 int g_Counter{ 0 };
 bool g_Moving{false};
-float g_X{ 4 }, g_Y{ 16 };
+float g_X{}, g_Y{};
+const int g_NrCols{ 10 };
 int g_Figure{ 7 };
 bool g_StateLine{ false }; //Line false --> down true --> up
 enum class BlockTypes
@@ -149,6 +151,40 @@ void ProcessKeyDownEvent(const SDL_KeyboardEvent  & e)
 	{
 	case SDLK_UP:
 		g_StateLine = !g_StateLine;
+		break;
+	case SDLK_LEFT:
+		if (g_X >0)
+		{
+			g_X--;
+		}
+		break;
+	case SDLK_RIGHT:
+		BlockTypes bTypes{ BlockTypes(g_Figure) };
+		switch (bTypes)
+		{
+		case BlockTypes::Square:
+			if (g_X < 8)
+			{
+				g_X++;
+			}
+			break;
+		case BlockTypes::Line:
+			if (g_StateLine)
+			{
+				if (g_X < 9)
+				{
+					g_X++;
+				}
+			}
+			else
+			{
+				if (g_X < 6)
+				{
+					g_X++;
+				}
+			}
+		}
+		
 		break;
 	}
 }
@@ -229,6 +265,18 @@ void DrawGrid()
 	DrawTexture(g_Grid, destRect);
 
 
+}
+
+void GridFill(int nrCols, Block *pFilled)
+{
+	int test{};
+	for (int i = 0; i < g_GridSize; i++)
+	{
+		pFilled[i].x = (i % 10) + 1; // 10 cols x rangin from 1 to 10
+		pFilled[i].y = (i + 10) / 10; // 16 rows y ranging from 1 to 16. Starting from 1 every 10 indexes +1
+		/*test = pFilled[i].y * 10 + pFilled[i].x; 
+		std::cout << test;*/
+	}
 }
 
 void BlockUpdate()
@@ -436,6 +484,7 @@ void Run( )
 	std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
 	InitGameResources();
+	GridFill(g_NrCols, g_GridArray);
 	
 	//The event loop
 	SDL_Event e{};
