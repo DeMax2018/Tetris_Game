@@ -89,6 +89,7 @@ void DrawBlock(float x, float y);
 void DrawSquare(float x, float y);
 void DrawLine(float x, float y);
 void GridFill(int nrCols, Block *pFilled);
+void GridUpdate(Block *pGrid);
 
 // Variables
 Texture g_Grid{};
@@ -102,18 +103,11 @@ float g_X{}, g_Y{};
 const int g_NrCols{ 10 };
 int g_Figure{ 7 };
 bool g_StateLine{ false }; //Line false --> down true --> up
+int g_Index{};
 enum class BlockTypes
 {
 	Square, Line
 };
-
-//enum class FilledEnum
-//{
-//	for (int i = 0; i < 180; i++)
-//	{
-//		
-//	}
-//};
 #pragma endregion gameDeclarations
 
 
@@ -251,6 +245,7 @@ void Update( float elapsedSec )
 	//}
 
 	BlockUpdate();
+	GridUpdate(g_GridArray);
 }
 
 void DrawGrid()
@@ -269,17 +264,50 @@ void DrawGrid()
 
 void GridFill(int nrCols, Block *pFilled)
 {
-	int test{};
 	for (int i = 0; i < g_GridSize; i++)
 	{
-		pFilled[i].x = (i % 10) + 1; // 10 cols x rangin from 1 to 10
-		pFilled[i].y = (i + 10) / 10; // 16 rows y ranging from 1 to 16. Starting from 1 every 10 indexes +1
-		/*test = pFilled[i].y * 10 + pFilled[i].x; 
-		std::cout << test;*/
+		pFilled[i].x = (i % 10); // 10 cols x rangin from 0 to 9
+		pFilled[i].y = (i) / 10; // 16 rows y ranging from 0 to 15. Starting from 0 every 10 indexes +1
+		g_Index = pFilled[i].y * 10 + pFilled[i].x;
+		std::cout << g_Index << " ";
 	}
 }
 
-void BlockUpdate()
+void GridUpdate(Block *pGrid)
+{
+	for (int i = 0; i < g_GridSize; i++)
+	{
+		if (g_Y == pGrid[i].y && g_X == pGrid[i].x)
+		{
+			pGrid[i].isMoving = true;
+		}
+		else
+		{
+			pGrid[i].isMoving = false;
+		}
+		if (pGrid[i].isFilled == true)
+		{
+			DrawBlock(pGrid[i].x, pGrid[i].y);
+		}
+	}
+	/*if (pGrid[g_Index].isFilled == true && pGrid[g_Index].isMoving == false)
+	{
+		BlockTypes bTypes{ BlockTypes(g_Figure) };
+		switch (bTypes)
+		{
+		case BlockTypes::Line:
+			DrawLine(pGrid[g_Index].x, pGrid[g_Index].y);
+			std::cout << "Testing" << std::endl;
+			break;
+		case BlockTypes::Square:
+			DrawSquare(pGrid[g_Index].x, pGrid[g_Index].y);
+			break;
+		}
+		g_GridArray[g_Index].isMoving = true;
+	}*/
+}
+
+void BlockUpdate() //Herschrijven in GridUpdate()!!
 {
 	//std::cout << g_Counter << std::endl;
 	if (g_Counter % 10 == 0)
@@ -310,6 +338,9 @@ void BlockUpdate()
 					break;
 				}
 				g_Moving = false;
+				g_Index = (g_Y - 1) * 10 + g_X;
+				g_GridArray[g_Index].isFilled = true;
+				g_GridArray[g_Index].isMoving = false;
 			}
 		}
 		else
@@ -339,10 +370,10 @@ void DrawBlock(float x, float y)
 {
 	glColor3f(0.f, 0.f, 1.f);
 	glBegin(GL_QUADS);
-	glVertex2f(x * g_BlockSize + g_Left + g_BlockSize, y * g_BlockSize); //Bottom left
-	glVertex2f(x * g_BlockSize + g_Left + (2 * g_BlockSize), y * g_BlockSize);//Bottom Right
-	glVertex2f(x * g_BlockSize + g_Left + (2 * g_BlockSize), y * g_BlockSize + g_BlockSize);//Top right
-	glVertex2f(x * g_BlockSize + g_Left + g_BlockSize, y * g_BlockSize + g_BlockSize);//Top left
+	glVertex2f(float(x) * g_BlockSize + g_Left + g_BlockSize, y * g_BlockSize); //Bottom left
+	glVertex2f(float(x) * g_BlockSize + g_Left + (2 * g_BlockSize), y * g_BlockSize);//Bottom Right
+	glVertex2f(float(x) * g_BlockSize + g_Left + (2 * g_BlockSize), y * g_BlockSize + g_BlockSize);//Top right
+	glVertex2f(float(x) * g_BlockSize + g_Left + g_BlockSize, y * g_BlockSize + g_BlockSize);//Top left
 	glEnd();
 }
 
@@ -473,7 +504,6 @@ void Initialize( )
 	{
 		QuitOnTtfError();
 	}
-
 }
 void Run( )
 {
