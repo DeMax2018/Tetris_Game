@@ -24,7 +24,8 @@ struct Color4f
 
 struct Block
 {
-	float x, y{};
+	int x, y, blockType;
 	bool isFilled;
 	bool isMoving;
+	bool stateLine;
 };

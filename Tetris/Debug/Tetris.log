@@ -1,6 +1,2 @@
 ﻿  Tetris.cpp
-c:\users\eneas\documents\school 2018-19\programming 1\lab\lab07 - raster game\tetris_game\tetris\tetris.cpp(277): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-c:\users\eneas\documents\school 2018-19\programming 1\lab\lab07 - raster game\tetris_game\tetris\tetris.cpp(278): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-c:\users\eneas\documents\school 2018-19\programming 1\lab\lab07 - raster game\tetris_game\tetris\tetris.cpp(279): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-c:\users\eneas\documents\school 2018-19\programming 1\lab\lab07 - raster game\tetris_game\tetris\tetris.cpp(350): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-  Tetris.vcxproj -> C:\Users\Eneas\Documents\School 2018-19\Programming 1\Lab\Lab07 - Raster Game\Tetris_Game\Tetris\Debug\Tetris.exe
+  Tetris.vcxproj -> C:\Users\maxim\Desktop\Game\Tetris_Game\Tetris\Debug\Tetris.exe

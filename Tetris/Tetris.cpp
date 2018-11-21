@@ -33,7 +33,7 @@
 #pragma region windowInformation
 const float g_WindowWidth{ 1280.0f };
 const float g_WindowHeight{ 720.0f };
-const std::string g_WindowTitle{ "Project name - Name, firstname - 1DAExx" };
+const std::string g_WindowTitle{ "Tetris - Dedobbeleer, Maxime - Heyse, Eneas - 1DAE09" };
 bool g_IsVSyncOn{ true };
 #pragma endregion windowInformation
 
@@ -85,11 +85,17 @@ void ProcessMouseDownEvent(const SDL_MouseButtonEvent & e);
 void ProcessMouseUpEvent(const SDL_MouseButtonEvent & e);
 void DrawGrid();
 void BlockUpdate();
-void DrawBlock(float x, float y);
-void DrawSquare(float x, float y);
-void DrawLine(float x, float y);
+void DrawBlock(float x, float y, int blockType);
+void MoveSquare(Block *pMoving, int bTypes);
+void FillSquare(Block *pMoving, int bTypes);
+void MoveLine(bool stateLine, Block *pMoving, int bTypes);
+void FillLine(bool stateLine, Block *pMoving, int bTypes);
+void MoveZ(Block *pMoving, bool stateZ, int bTypes);
+void FillZ(Block *pFilled, bool stateZ, int bTypes);
 void GridFill(int nrCols, Block *pFilled);
-void GridUpdate(Block *pGrid);
+void ConsoleGrid(Block *pFilled);
+void DrawFills(Block *pFilled);
+void DrawMoving(Block *pMoving);
 
 // Variables
 Texture g_Grid{};
@@ -104,9 +110,10 @@ const int g_NrCols{ 10 };
 int g_Figure{ 7 };
 bool g_StateLine{ false }; //Line false --> down true --> up
 int g_Index{};
+int g_BlocksUsed{};
 enum class BlockTypes
 {
-	Square, Line
+	Square, Line, zBlock
 };
 #pragma endregion gameDeclarations
 
@@ -157,7 +164,7 @@ void ProcessKeyDownEvent(const SDL_KeyboardEvent  & e)
 		switch (bTypes)
 		{
 		case BlockTypes::Square:
-			if (g_X < 8)
+			if (g_X < 8 && g_GridArray[g_Index+2].isFilled == false)
 			{
 				g_X++;
 			}
@@ -173,6 +180,21 @@ void ProcessKeyDownEvent(const SDL_KeyboardEvent  & e)
 			else
 			{
 				if (g_X < 6)
+				{
+					g_X++;
+				}
+			}
+		case BlockTypes::zBlock:
+			if (g_StateLine)
+			{
+				if (g_X < 9)
+				{
+					g_X++;
+				}
+			}
+			else
+			{
+				if (g_X < 7)
 				{
 					g_X++;
 				}
@@ -233,19 +255,8 @@ void ProcessMouseUpEvent(const SDL_MouseButtonEvent & e)
 
 void Update( float elapsedSec )
 {
-	// Check keyboard state
-	//const Uint8 *pStates = SDL_GetKeyboardState( nullptr );
-	//if ( pStates[SDL_SCANCODE_RIGHT] )
-	//{
-	//	std::cout << "Right arrow key is down\n";
-	//}
-	//if ( pStates[SDL_SCANCODE_LEFT] && pStates[SDL_SCANCODE_UP])
-	//{
-	//	std::cout << "Left and up arrow keys are down\n";
-	//}
-
 	BlockUpdate();
-	GridUpdate(g_GridArray);
+
 }
 
 void DrawGrid()
@@ -258,106 +269,202 @@ void DrawGrid()
 	destRect.bottom = 0.0f;
 
 	DrawTexture(g_Grid, destRect);
+}
 
+void DrawFills(Block *pFilled)
+{
+	for (int i = 0; i < g_GridSize; i++)
+	{
+		if (pFilled[i].isFilled)
+		{
+			DrawBlock(float(pFilled[i].x), float(pFilled[i].y), pFilled[i].blockType);
+		}
+	}
 
+	int nrRows{ g_GridSize / g_NrCols };
+	int counterColFilled{};
+	int removeCounter{};
+
+	for (int i = 0; i < nrRows; i++)
+	{
+		for (int j = 0; j < g_NrCols; j++)
+		{
+			int index = i * 10 + j;
+			if (pFilled[index].isFilled)
+			{
+				pFilled[index].isFilled = false;
+				pFilled[index - (removeCounter * 10)].isFilled = true;
+				counterColFilled++;
+			}
+		}
+		if (counterColFilled == g_NrCols)
+		{
+			for (int j = 0; j < g_NrCols; j++)
+			{
+				int index = i * 10 + j;
+				pFilled[index].isFilled = false;
+			}
+			removeCounter++;
+		}
+		counterColFilled = 0;
+	}
+}
+
+void DrawMoving(Block *pMoving)
+{
+	for (int i = 0; i < g_GridSize; i++)
+	{
+		if (pMoving[i].isMoving)
+		{
+			DrawBlock(float(pMoving[i].x), float(pMoving[i].y), pMoving[i].blockType);
+		}
+	}
 }
 
 void GridFill(int nrCols, Block *pFilled)
 {
 	for (int i = 0; i < g_GridSize; i++)
 	{
-		pFilled[i].x = (i % 10); // 10 cols x rangin from 0 to 9
+		pFilled[i].x = i % 10; // 10 cols x rangin from 0 to 9
 		pFilled[i].y = (i) / 10; // 16 rows y ranging from 0 to 15. Starting from 0 every 10 indexes +1
 		g_Index = pFilled[i].y * 10 + pFilled[i].x;
-		std::cout << g_Index << " ";
 	}
 }
 
-void GridUpdate(Block *pGrid)
+void ConsoleGrid(Block *pFilled)
 {
-	for (int i = 0; i < g_GridSize; i++)
+	int nrRows{ g_GridSize / g_NrCols };
+	for (int i = 0; i < nrRows; i++)
 	{
-		if (g_Y == pGrid[i].y && g_X == pGrid[i].x)
+		std::cout << std::endl;
+		for (int j = 0; j < g_NrCols; j++)
 		{
-			pGrid[i].isMoving = true;
-		}
-		else
-		{
-			pGrid[i].isMoving = false;
-		}
-		if (pGrid[i].isFilled == true)
-		{
-			DrawBlock(pGrid[i].x, pGrid[i].y);
+			int idx = (i*10) + j;
+			std::cout << pFilled[idx].isFilled << " ";
 		}
 	}
-	/*if (pGrid[g_Index].isFilled == true && pGrid[g_Index].isMoving == false)
-	{
-		BlockTypes bTypes{ BlockTypes(g_Figure) };
-		switch (bTypes)
-		{
-		case BlockTypes::Line:
-			DrawLine(pGrid[g_Index].x, pGrid[g_Index].y);
-			std::cout << "Testing" << std::endl;
-			break;
-		case BlockTypes::Square:
-			DrawSquare(pGrid[g_Index].x, pGrid[g_Index].y);
-			break;
-		}
-		g_GridArray[g_Index].isMoving = true;
-	}*/
 }
 
-void BlockUpdate() //Herschrijven in GridUpdate()!!
+void BlockUpdate()
 {
 	//std::cout << g_Counter << std::endl;
 	if (g_Counter % 10 == 0)
 	{
 		if (g_Moving)
 		{
-			if (g_Y > 1)
+			for (int i = 0; i < g_GridSize; i++)
+			{
+				g_GridArray[i].isMoving = false;
+			}
+
+			g_Index = int(g_Y * 10 + g_X);
+
+			int Indexes[4];
+			BlockTypes bTypes{ BlockTypes(g_Figure) };
+			switch (bTypes)
+			{
+			case BlockTypes::Square:
+				Indexes[0] = g_Index;
+				Indexes[1] = g_Index + 1;
+				Indexes[2] = g_Index + 10;
+				Indexes[3] = g_Index + 11;
+				break;
+			case BlockTypes::Line:
+				if (g_StateLine)
+				{
+					Indexes[0] = g_Index;
+					Indexes[1] = g_Index + 10;
+					Indexes[2] = g_Index + 20;
+					Indexes[3] = g_Index + 30;
+
+				}
+				else
+				{
+					Indexes[0] = g_Index;
+					Indexes[1] = g_Index + 1;
+					Indexes[2] = g_Index + 2;
+					Indexes[3] = g_Index + 3;
+				}
+				break;
+			case BlockTypes::zBlock:
+				if (g_StateLine)
+				{
+
+					Indexes[0] = g_Index;
+					Indexes[1] = g_Index + 10;
+					Indexes[2] = g_Index + 9;
+					Indexes[3] = g_Index + 19;
+				}
+				else
+				{
+
+					Indexes[0] = g_Index;
+					Indexes[1] = g_Index + 1;
+					Indexes[2] = g_Index + 11;
+					Indexes[3] = g_Index + 12;
+				}
+			}
+			if (g_Y > 0 && g_GridArray[Indexes[0]].isMoving == g_GridArray[Indexes[0] -10].isFilled && g_GridArray[Indexes[1]].isMoving == g_GridArray[Indexes[1] - 10].isFilled && g_GridArray[Indexes[2]].isMoving == g_GridArray[Indexes[2] - 10].isFilled && g_GridArray[Indexes[3]].isMoving == g_GridArray[Indexes[3] - 10].isFilled)
 			{
 				g_Y--;
-			}
-			else
-			{
-				BlockTypes bTypes{ BlockTypes(g_Figure) };
 				switch (bTypes)
 				{
 				case BlockTypes::Square:
+					MoveSquare(g_GridArray, int(bTypes));
+					break;
 
+				case BlockTypes::Line:
+					MoveLine(g_StateLine, g_GridArray, int(bTypes));
+					break;
+				case BlockTypes::zBlock:
+					MoveZ(g_GridArray, g_StateLine, int(bTypes));
+				}
+			}
+			else
+			{
+				switch (bTypes)
+				{
+				case BlockTypes::Square:
+					FillSquare(g_GridArray, int(bTypes));
 					break;
 				case BlockTypes::Line:
-					if (g_StateLine)
-					{
-						//g_FilledArray[int(g_Y) * 10 + int(g_X)] =  1; 
-					}
-					else if (!g_StateLine)
-					{
-
-					}
+					FillLine(g_StateLine, g_GridArray, int(bTypes));
 					break;
+				case BlockTypes::zBlock:
+					FillZ(g_GridArray, g_StateLine, int(bTypes));
 				}
 				g_Moving = false;
-				g_Index = (g_Y - 1) * 10 + g_X;
-				g_GridArray[g_Index].isFilled = true;
-				g_GridArray[g_Index].isMoving = false;
 			}
+			
 		}
 		else
 		{
-			g_Figure = rand() % 2;
-			std::cout << g_Figure << std::endl;
+			g_Figure = rand() % 3;
+			g_BlocksUsed++;
+			ConsoleGrid(g_GridArray);
+			std::cout << std::endl << g_Figure << std::endl;
 			BlockTypes bTypes{ BlockTypes(g_Figure) };
 			switch (bTypes)
 			{
 			case BlockTypes::Square:
 				g_X = 4;
-				g_Y = 15;
+				g_Y = 14;
+				g_Index = int(g_Y * 10 + g_X);
+				MoveSquare(g_GridArray, int(bTypes));
 				break;
 			case BlockTypes::Line:
 				g_X = 3;
-				g_Y = 16;
+				g_Y = 15;
+				g_Index = int(g_Y * 10 + g_X);
 				g_StateLine = false;
+				MoveLine(g_StateLine, g_GridArray, int(bTypes));
+				break;
+			case BlockTypes::zBlock:
+				g_X = 4;
+				g_Y = 14;
+				g_Index = int(g_Y * 10 + g_X);
+				g_StateLine = false;
+				MoveZ(g_GridArray, g_StateLine, int(bTypes));
 				break;
 			}
 			g_Moving = true;
@@ -366,58 +473,192 @@ void BlockUpdate() //Herschrijven in GridUpdate()!!
 	g_Counter++;
 }
 
-void DrawBlock(float x, float y)
+void DrawBlock(float x, float y, int blockType)
 {
-	glColor3f(0.f, 0.f, 1.f);
 	glBegin(GL_QUADS);
-	glVertex2f(float(x) * g_BlockSize + g_Left + g_BlockSize, y * g_BlockSize); //Bottom left
-	glVertex2f(float(x) * g_BlockSize + g_Left + (2 * g_BlockSize), y * g_BlockSize);//Bottom Right
-	glVertex2f(float(x) * g_BlockSize + g_Left + (2 * g_BlockSize), y * g_BlockSize + g_BlockSize);//Top right
-	glVertex2f(float(x) * g_BlockSize + g_Left + g_BlockSize, y * g_BlockSize + g_BlockSize);//Top left
+
+	BlockTypes bType{ BlockTypes(blockType) };
+	switch (bType)
+	{
+	case BlockTypes::Square:
+		glColor3f(0.f, 0.f, 1.f);
+		break;
+	case BlockTypes::Line:
+		glColor3f(1.f, 0.f, 0.f);
+		break;
+	case BlockTypes::zBlock:
+		glColor3f(0.0f, 1.f, 0.f);
+		break;
+	}
+	glVertex2f(x * g_BlockSize + g_Left + g_BlockSize, (y+1) * g_BlockSize); //Bottom left
+	glVertex2f(x * g_BlockSize + g_Left + (2 * g_BlockSize), (y+1) * g_BlockSize);//Bottom Right
+	glVertex2f(x * g_BlockSize + g_Left + (2 * g_BlockSize), (y+1) * g_BlockSize + g_BlockSize);//Top right
+	glVertex2f(x * g_BlockSize + g_Left + g_BlockSize, (y+1) * g_BlockSize + g_BlockSize);//Top left
 	glEnd();
 }
 
-void DrawSquare(float x, float y)
+void MoveZ(Block *pMoving, bool stateZ, int bTypes)
 {
-	DrawBlock(x, y);//Bottom left block
-	DrawBlock(x + 1, y);//Bottom right
-	DrawBlock(x + 1, y + 1);//Top right
-	DrawBlock(x, y + 1);//Top left
+	for (int i = 0; i < g_GridSize; i++)
+	{
+		if (g_Index == i)
+		{
+			if (stateZ)
+			{
+				pMoving[i].isMoving = true;
+				pMoving[i + 10].isMoving = true;
+				pMoving[i + 9].isMoving = true;
+				pMoving[i + 19].isMoving = true;
+				pMoving[i].blockType = bTypes;
+				pMoving[i + 10].blockType = bTypes;
+				pMoving[i + 9].blockType = bTypes;
+				pMoving[i + 19].blockType = bTypes;
+			}
+			else
+			{
+				pMoving[i].isMoving = true;
+				pMoving[i + 1].isMoving = true;
+				pMoving[i + 11].isMoving = true;
+				pMoving[i + 12].isMoving = true;
+				pMoving[i].blockType = bTypes;
+				pMoving[i + 1].blockType = bTypes;
+				pMoving[i + 11].blockType = bTypes;
+				pMoving[i + 12].blockType = bTypes;
+			}
+		}
+	}
 }
 
-void DrawLine(float x, float y)
+void FillZ(Block *pFilled, bool stateZ, int bTypes)
 {
-	if (g_StateLine)
+	for (int i = 0; i < g_GridSize; i++)
 	{
-		for (float i = 0; i < 4; i++)
+		if (g_Index == i)
 		{
-			DrawBlock(x, y+i);
+			if (stateZ)
+			{
+				pFilled[i].isFilled = true;
+				pFilled[i + 10].isFilled = true;
+				pFilled[i + 9].isFilled = true;
+				pFilled[i + 19].isFilled = true;
+				pFilled[i].blockType = bTypes;
+				pFilled[i + 10].blockType = bTypes;
+				pFilled[i + 9].blockType = bTypes;
+				pFilled[i + 19].blockType = bTypes;
+			}
+			else
+			{
+				pFilled[i].isFilled = true;
+				pFilled[i + 1].isFilled = true;
+				pFilled[i + 11].isFilled = true;
+				pFilled[i + 12].isFilled = true;
+				pFilled[i].blockType = bTypes;
+				pFilled[i + 1].blockType = bTypes;
+				pFilled[i + 11].blockType = bTypes;
+				pFilled[i + 12].blockType = bTypes;
+			}
 		}
 	}
-	else if (!g_StateLine)
+}
+
+void MoveSquare(Block *pMoving, int bTypes)
+{
+	for (int i = 0; i < g_GridSize; i++)
 	{
-		for (float i = 0; i < 4; i++)
+		if (g_Index == i)
 		{
-			DrawBlock(x + i, y);
+			pMoving[i].isMoving = true; // Bottom left
+			pMoving[i+1].isMoving = true; // Bottom right
+			pMoving[i+10].isMoving = true; // Top left
+			pMoving[i+11].isMoving = true; // Top right
+			pMoving[i].blockType = bTypes;
+			pMoving[i + 1].blockType = bTypes;
+			pMoving[i + 10].blockType = bTypes;
+			pMoving[i + 11].blockType = bTypes;
 		}
 	}
-	
+}
+
+void FillSquare(Block *pMoving, int bTypes)
+{
+	for (int i = 0; i < g_GridSize; i++)
+	{
+		if (g_Index == i)
+		{
+			pMoving[i].isFilled = true; // Bottom left
+			pMoving[i + 1].isFilled = true; // Bottom right
+			pMoving[i + 10].isFilled = true; // Top left
+			pMoving[i + 11].isFilled = true; // Top right
+			pMoving[i].blockType = bTypes;
+			pMoving[i + 1].blockType = bTypes;
+			pMoving[i + 10].blockType = bTypes;
+			pMoving[i + 11].blockType = bTypes;
+		}
+	}
+}
+
+void MoveLine(bool stateLine, Block *pMoving, int bTypes)
+{
+	for (int i = 0; i < g_GridSize; i++)
+	{
+		if (i == g_Index)
+		{
+			if (stateLine)
+			{
+				for (int j = 0; j < 4; j++)
+				{
+					pMoving[i + (j * 10)].isMoving = true;
+					pMoving[i + (j * 10)].blockType = bTypes;
+				}
+
+			}
+			else if (!stateLine)
+			{
+				for (int j = 0; j < 4; j++)
+				{
+					pMoving[i + j].isMoving = true;
+					pMoving[i + j].blockType = bTypes;
+				}
+			}
+		}
+
+	}
+}
+
+void FillLine(bool stateLine, Block *pMoving, int bTypes)
+{
+	for (int i = 0; i < g_GridSize; i++)
+	{
+		if (i == g_Index)
+		{
+			if (stateLine)
+			{
+				for (int j = 0; j < 4; j++)
+				{
+					pMoving[i + (j * 10)].isFilled = true;
+					pMoving[i + (j * 10)].blockType = bTypes;
+				}
+
+			}
+			else if (!stateLine)
+			{
+				for (int j = 0; j < 4; j++)
+				{
+					pMoving[i + j].isFilled = true;
+					pMoving[i + j].blockType = bTypes;
+				}
+			}
+		}
+
+	}
 }
 
 void Draw( )
 {
 	ClearBackground( );
 	DrawGrid();
-	BlockTypes bTypes{ BlockTypes(g_Figure) };
-	switch (bTypes)
-	{
-	case BlockTypes::Square:
-		DrawSquare(g_X, g_Y);
-		break;
-	case BlockTypes::Line:
-		DrawLine(g_X, g_Y);
-		break;
-	}
+	DrawMoving(g_GridArray);
+	DrawFills(g_GridArray);
 }
 
 void ClearBackground( )
